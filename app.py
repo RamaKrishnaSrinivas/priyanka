@@ -21,25 +21,21 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-# ---------------- PostgreSQL settings ----------------
-DB_HOST = os.getenv('DB_HOST', '127.0.0.1')
-DB_NAME = os.getenv('DB_NAME', 'oruganti_db')
-DB_USER = os.getenv('DB_USER', 'postgres')
-DB_PASSWORD = os.getenv('DB_PASSWORD', 'skro@0513')
-DB_PORT = os.getenv('DB_PORT', 5432)
-
 def connect_to_db():
+    database_url = os.getenv('DATABASE_URL')
+
+    if not database_url:
+        print("ERROR: DATABASE_URL environment variable not set.")
+        return None 
+    
     try:
-        return psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port=DB_PORT
-        )
-    except psycopg2.Error as e:
-        print(f"Error connecting to DB: {e}")
+        conn = psycopg2.connect(database_url)
+        print("Database connection successful.")
+        return conn
+    except Exception as e:
+        print("Database connection error:", e)
         return None
+
 
 def create_table():
     conn = connect_to_db()
@@ -74,14 +70,14 @@ FULL_FRONTEND_HTML = """
         /* Base Styles */
         body {
             font-family: Arial, sans-serif;
-            background: #f0f2f5;
+            background: #8fd368;
             margin: 0;
             padding: 0;
         }
         .container {
             width: 350px;
             margin: 50px auto;
-            background: #8fd368;
+            background: #f0f2f5;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 40px rgba(115, 180, 10, 0.1);
@@ -202,6 +198,7 @@ FULL_FRONTEND_HTML = """
         <nav>
             <ul>
                 <!-- Note: url_for('index') needs explicit _external=True to keep the #hash intact on redirect -->
+                <li><a href="{{ url_for('index', _external=True) }}#welcome" class="my-hover-link">Welcome</a></li>
                 <li><a href="{{ url_for('index', _external=True) }}#register" class="my-hover-link">Register</a></li>
                 <li><a href="{{ url_for('index', _external=True) }}#login" class="my-hover-link">Login</a></li>
             </ul>
@@ -259,7 +256,6 @@ FULL_FRONTEND_HTML = """
 </html>
 """
 
-# ---------------- Routes ----------------
 @app.route('/')
 def index():
     return render_template_string(FULL_FRONTEND_HTML)
@@ -288,7 +284,6 @@ def register():
                 flash("Email already exists or DB error!", "red")
             finally:
                 conn.close()
-    
     return redirect(url_for('index', _external=True) + '#register')
 
 
@@ -304,16 +299,15 @@ def login():
             cur = conn.cursor()
             try:
                 cur.execute("SELECT * FROM users WHERE email=%s", (email,))
-                user = cur.fetchone()
-                if user and bcrypt.check_password_hash(user[4], password):
-                    session['user_id'] = user[0] 
-                    session['user_name'] = user[1] 
+                user_record = cur.fetchone()
+                if user_record and bcrypt.check_password_hash(user_record[4], password): 
+                    session['user_id'] = user_record[0]
+                    session['user_name'] = user_record[1]
                     return redirect(url_for('dashboard'))
                 else:
                     flash("Invalid email or password", "red")
             finally:
                 conn.close()
-
     return redirect(url_for('index', _external=True) + '#login')
 
 
