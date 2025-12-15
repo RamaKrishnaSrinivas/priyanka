@@ -43,7 +43,7 @@ def create_table():
         cur = conn.cursor()
         try:
             cur.execute("""
-                CREATE TABLE IF NOT EXISTS users (
+                CREATE TABLE IF NOT EXISTS users_list (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     dob DATE NOT NULL,
@@ -274,7 +274,7 @@ def register():
             cur = conn.cursor()
             try:
                 cur.execute(
-                    "INSERT INTO users (name, dob, email, password) VALUES (%s,%s,%s,%s)",
+                    "INSERT INTO users_list (name, dob, email, password) VALUES (%s,%s,%s,%s)",
                     (name, dob, email, hashed_password)
                 )
                 conn.commit()
@@ -298,9 +298,9 @@ def login():
         if conn:
             cur = conn.cursor()
             try:
-                cur.execute("SELECT * FROM users WHERE email=%s", (email,))
+                cur.execute("SELECT * FROM users_list WHERE email=%s", (email,))
                 user_record = cur.fetchone()
-                if user_record and bcrypt.check_password_hash(user_record[4], password): 
+                if user_record and bcrypt.check_password_hash(user_record[4], password): # Use index 4 for the hashed password
                     session['user_id'] = user_record[0]
                     session['user_name'] = user_record[1]
                     return redirect(url_for('dashboard'))
@@ -337,11 +337,11 @@ def print_users():
         return "Database connection error!", 500
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id, name, dob, email FROM users")
-        users = cur.fetchall()
+        cur.execute("SELECT id, name, dob, email FROM users_list")
+        users_list = cur.fetchall()
         print("\n------ USERS DATA ------")
-        for u in users:
-            print(f"ID: {u[0]}, Name: {u[1]}, DOB: {u[2]}, Email: {u[3]}")
+        for u in users_list:
+            print(f"ID: {u}, Name: {u}, DOB: {u}, Email: {u}")
         print("------------------------\n")
         return "Users printed in VS Code terminal successfully!"
     finally:
