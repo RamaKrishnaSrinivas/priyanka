@@ -17,7 +17,7 @@ bcrypt = Bcrypt(app)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["5 per hour"],
+    default_limits=["5 per minute"],
     storage_uri="memory://",
 )
 
@@ -288,7 +288,7 @@ def register():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per hour")
+@limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
         email = request.form['email']
